@@ -1,0 +1,14 @@
+id,type,description,url,author_or_publisher,date,license,attribution_text,used_for,status,notes
+S1,fact,Coverage of the Dec 2001 unveiling on US morning TV,,ABC News / contemporary press,2001-12,n/a,,C1,to-find,Find contemporary article (NYT/ABC/AP)
+S2,fact,Segway article for discovery of primary sources (not final source),https://en.wikipedia.org/wiki/Segway,Wikipedia,,n/a,,C1 C2 C3,to-verify,Use only to locate primary citations
+S3,fact,"Book: Code Name Ginger / Reinventing the Wheel (Steve Kemper) — pre-launch hype, sales expectations",,Steve Kemper,2003,n/a,,C2 C4 C6,to-verify,Confirm quotes and figures directly
+S4,fact,Reporting on actual cumulative Segway PT sales,,,,n/a,,C4,to-find,Need a reliable figure or drop the number
+S5,fact,Example of sidewalk restriction/ban (specific city or country),,,,n/a,,C5,to-find,
+S6,fact,Ninebot acquisition of Segway (2015) — press release or major outlet,,,2015-04,n/a,,C7,to-find,
+S7,fact,Announcement that Segway PT production would end July 2020,,Segway Inc. / major outlet,2020-06,n/a,,C8,to-find,
+S8,fact,Current Segway-Ninebot product line (official site),,Segway-Ninebot,2026,n/a,,C9,to-verify,Re-check in publish week
+I1,image,First-generation Segway HT/PT,https://commons.wikimedia.org/wiki/Category:Segway_PT,Wikimedia Commons,,,,"hook 0-5s",to-clear,Pick a file and record its exact license
+I2,image,Police officers on Segway,,,,,,body,to-clear,
+I3,image,Segway tour group,,,,,,body,to-clear,
+I4,image,Segway in a city setting,,,,,,body,to-clear,
+I5,image,Current Segway-Ninebot e-scooter,,,,,,"today 50-60s",to-clear,

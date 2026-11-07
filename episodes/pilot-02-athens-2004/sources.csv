@@ -1,0 +1,13 @@
+id,type,description,url,author_or_publisher,date,license,attribution_text,used_for,status,notes
+S1,fact,Official Games dates (IOC page for Athens 2004),https://olympics.com/en/olympic-games/athens-2004,International Olympic Committee,,n/a,,C1,to-verify,
+S2,fact,Cost estimate of Athens 2004 Games,,,,n/a,,C2,to-find,Look for academic study (e.g. Oxford Olympics cost study) + Greek government figures
+S3,fact,Major-outlet reporting on post-Games venue abandonment (e.g. 10-year anniversary pieces),,,2014,n/a,,C2 C3 C5,to-find,
+S4,fact,List of Hellinikon Olympic Complex venues,https://en.wikipedia.org/wiki/Hellinikon_Olympic_Complex,Wikipedia,,n/a,,C4,to-verify,Discovery only — follow to primary citations
+S5,fact,Current use of OAKA stadium (recent fixtures/events),,,2026,n/a,,C6,to-find,Re-check in publish week
+S6,fact,Ellinikon redevelopment project status (developer + independent press),,Lamda Development / press,2026,n/a,,C7,to-find,Re-check in publish week
+I1,image,Athens 2004 Olympic Stadium / ceremony,https://commons.wikimedia.org/wiki/Category:2004_Summer_Olympics,Wikimedia Commons,,,,"hook 0-5s",to-clear,Pick a file and record its exact license
+I2,image,Abandoned Hellinikon venue,,,,,,body,to-clear,
+I3,image,Abandoned venue #2,,,,,,body,to-clear,
+I4,image,Abandoned venue #3,,,,,,body,to-clear,
+I5,image,Ellinikon site today,,,,,,"today 50-60s",to-clear,
+M1,map,Base map of Athens,https://www.openstreetmap.org,OpenStreetMap contributors,,ODbL,© OpenStreetMap contributors,"motion 40-50s",cleared,Attribution required

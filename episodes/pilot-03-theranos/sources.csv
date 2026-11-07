@@ -1,0 +1,12 @@
+id,type,description,url,author_or_publisher,date,license,attribution_text,used_for,status,notes
+S1,fact,Company background and founding year (court record or major outlet),,,,n/a,,C1 C2,to-find,
+S2,fact,Fortune cover story on Theranos (2014),,Fortune,2014-06,n/a,,C2 C3,to-find,
+S3,fact,Forbes profile / list naming Holmes youngest self-made female billionaire,,Forbes,2014,n/a,,C3 C4,to-find,
+S4,fact,"WSJ investigation by John Carreyrou, Oct 2015",,The Wall Street Journal,2015-10,n/a,,C5,to-find,Paywalled — cite headline/date only
+S5,fact,SEC press release charging Theranos/Holmes (2018),https://www.sec.gov/news/press-releases,U.S. SEC,2018-03,n/a,,C6,to-find,Locate exact release
+S6,fact,"DOJ (N.D. Cal.) press releases: indictment 2018, verdict Jan 2022, sentencing Nov 2022",https://www.justice.gov/usao-ndca,U.S. Department of Justice,2018-2022,n/a,,C6 C7 C8,to-find,Locate exact releases; confirm count numbers
+S7,fact,Federal Bureau of Prisons inmate locator — current status and projected release,https://www.bop.gov/inmateloc/,Federal Bureau of Prisons,2026,n/a,,C9 C10,to-verify,Re-check in publish week
+I1,image,Elizabeth Holmes at a public event (CC-licensed),https://commons.wikimedia.org/wiki/Category:Elizabeth_Holmes,Wikimedia Commons,,,,"hook 0-5s",to-clear,Record exact license + author of chosen file
+I2,image,Former Theranos office exterior,,,,,,body,to-clear,
+I3,document,First page of public court/SEC filing,,U.S. Government,,Public domain (verify),,body,to-clear,
+I4,image,San Jose federal courthouse exterior,,,,,,"today 50-60s",to-clear,
