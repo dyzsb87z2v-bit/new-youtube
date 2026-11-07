@@ -1,13 +1,16 @@
 id,type,description,url,author_or_publisher,date,license,attribution_text,used_for,status,notes
-S1,fact,Official Games dates (IOC page for Athens 2004),https://olympics.com/en/olympic-games/athens-2004,International Olympic Committee,,n/a,,C1,to-verify,
-S2,fact,Cost estimate of Athens 2004 Games,,,,n/a,,C2,to-find,Look for academic study (e.g. Oxford Olympics cost study) + Greek government figures
-S3,fact,Major-outlet reporting on post-Games venue abandonment (e.g. 10-year anniversary pieces),,,2014,n/a,,C2 C3 C5,to-find,
-S4,fact,List of Hellinikon Olympic Complex venues,https://en.wikipedia.org/wiki/Hellinikon_Olympic_Complex,Wikipedia,,n/a,,C4,to-verify,Discovery only — follow to primary citations
-S5,fact,Current use of OAKA stadium (recent fixtures/events),,,2026,n/a,,C6,to-find,Re-check in publish week
-S6,fact,Ellinikon redevelopment project status (developer + independent press),,Lamda Development / press,2026,n/a,,C7,to-find,Re-check in publish week
-I1,image,Athens 2004 Olympic Stadium / ceremony,https://commons.wikimedia.org/wiki/Category:2004_Summer_Olympics,Wikimedia Commons,,,,"hook 0-5s",to-clear,Pick a file and record its exact license
-I2,image,Abandoned Hellinikon venue,,,,,,body,to-clear,
-I3,image,Abandoned venue #2,,,,,,body,to-clear,
-I4,image,Abandoned venue #3,,,,,,body,to-clear,
-I5,image,Ellinikon site today,,,,,,"today 50-60s",to-clear,
-M1,map,Base map of Athens,https://www.openstreetmap.org,OpenStreetMap contributors,,ODbL,© OpenStreetMap contributors,"motion 40-50s",cleared,Attribution required
+S1,fact,Games dates 13-29 August 2004,https://olympics.com/en/olympic-games/athens-2004,International Olympic Committee,,n/a,,C1,verified,Also Commons category start time 13 Aug 2004
+S2,fact,"Cost around EUR 11 billion in 2014 figures",https://www.bloomberg.com/news/articles/2014-08-11/10-years-later-here-are-the-remains-of-athens-olympic-games,Bloomberg,2014-08-11,n/a,,C2,verified,
+S3,fact,"Cost estimated between EUR 9 and 11 billion",https://sporthumanities.pl/api/files/view/572517.pdf,Sport humanities (academic paper),,n/a,,C2,verified,Range used on screen
+S4,fact,"Hellinikon complex venues abandoned 10 years on (softball, hockey, canoe/kayak slalom)",https://www.theguardian.com/sport/gallery/2014/aug/13/abandoned-athens-olympic-2004-venues-10-years-on-in-pictures,The Guardian,2014-08-13,n/a,,C3,verified,
+S5,fact,"Softball stadium 'a weed patch'; field hockey arena untouched; worker quote (Evening Standard 2012)",https://www.businessinsider.com/abandoned-athens-olympics-venues-2014-8,Business Insider (Reuters/Getty photos),2014-08-07,n/a,,C3 C4,verified,Quote is second-hand; attributed on screen as reported by Business Insider
+S6,fact,"First Olympic slalom held in saltwater",https://www.nytimes.com/2004/08/17/sports/olympics/saltwater-is-a-challenge-for-canoe-and-kayak.html,The New York Times,2004-08-17,n/a,,C5,verified,
+S7,fact,"Hellinikon Olympic complex built on the former Athens airport; several venues found no post-Games use",https://en.wikipedia.org/wiki/Venues_of_the_2004_Summer_Olympics,Wikipedia (cites Guardian 2014),,n/a,,C6,verified,Discovery; corroborated by S4 and S10
+S8,fact,"Greece clinched a 915-million-euro deal for the disused airport site in 2014",https://www.reuters.com/article/business/greece-revises-hellenikon-property-deal-unlocking-bailout-funds-idUSKCN0YT1AV/,Reuters,2016,n/a,,C7,verified,
+S9,fact,"The Ellinikon: developer describes it as Europe's largest urban regeneration project",https://www.lamdadev.com/en/portfolio/theellinikon,LAMDA Development,2026,n/a,,C8,verified,Developer claim; VO avoids repeating it
+S10,fact,"Ellinikon Sports Park first public event 25 June 2026 (Acropolis Rally stage); site unused for two decades",https://resident.com/real-estate/2026/06/24/a-new-sports-and-lifestyle-landmark-rises-at-the-ellinikon,Resident Magazine,2026-06-24,n/a,,C8,verified,Re-check in publish week
+A1,image,Olympic flame at the opening ceremony 2004,https://commons.wikimedia.org/wiki/File:Olympic_flame_at_opening_ceremony_2004.jpg,Alterego (via Wikimedia Commons),2004-08-13,CC BY-SA 3.0 / GFDL 1.2+,"Photo: Alterego, CC BY-SA 3.0, via Wikimedia Commons",hook 0-5s,cleared,
+A2,image,Hellinikon Olympic complex aerial,https://commons.wikimedia.org/wiki/File:Hellinikon_olympic_complex_athens.jpg,Arne Müseler (via Wikimedia Commons),2019-12-25,CC BY-SA 3.0 DE,"Photo: Arne Müseler, CC BY-SA 3.0 DE, via Wikimedia Commons",body 15-17s,cleared,
+A3,image,Hellinikon canoe/kayak slalom centre aerial,https://commons.wikimedia.org/wiki/File:Hellinikon_Olympic_Canoe_and_Kayak_Slalom_Centre_2.jpg,Arne Müseler (via Wikimedia Commons),2019-12-25,CC BY-SA 3.0 DE,"Photo: Arne Müseler, CC BY-SA 3.0 DE, via Wikimedia Commons",body 24-28s,cleared,
+A4,image,Softball stadium abandoned,https://commons.wikimedia.org/wiki/File:Athens_Softball_Stadium_Abandoned_2018.jpg,Evanonthegc (via Wikimedia Commons),2018-11-16,CC BY-SA 4.0,"Photo: Evanonthegc, CC BY-SA 4.0, via Wikimedia Commons",body 20-24s,cleared,
+A5,image,Riviera Tower under construction at the Ellinikon,https://commons.wikimedia.org/wiki/File:Riviera_Tower_(September_2025).jpg,Dimsar01 (via Wikimedia Commons),2025-09-04,CC BY-SA 4.0,"Photo: Dimsar01, CC BY-SA 4.0, via Wikimedia Commons",today 50-58s,cleared,Photo is from 2025
