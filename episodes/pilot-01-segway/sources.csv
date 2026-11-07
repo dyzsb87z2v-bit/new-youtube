@@ -1,14 +1,16 @@
 id,type,description,url,author_or_publisher,date,license,attribution_text,used_for,status,notes
-S1,fact,Coverage of the Dec 2001 unveiling on US morning TV,,ABC News / contemporary press,2001-12,n/a,,C1,to-find,Find contemporary article (NYT/ABC/AP)
-S2,fact,Segway article for discovery of primary sources (not final source),https://en.wikipedia.org/wiki/Segway,Wikipedia,,n/a,,C1 C2 C3,to-verify,Use only to locate primary citations
-S3,fact,"Book: Code Name Ginger / Reinventing the Wheel (Steve Kemper) — pre-launch hype, sales expectations",,Steve Kemper,2003,n/a,,C2 C4 C6,to-verify,Confirm quotes and figures directly
-S4,fact,Reporting on actual cumulative Segway PT sales,,,,n/a,,C4,to-find,Need a reliable figure or drop the number
-S5,fact,Example of sidewalk restriction/ban (specific city or country),,,,n/a,,C5,to-find,
-S6,fact,Ninebot acquisition of Segway (2015) — press release or major outlet,,,2015-04,n/a,,C7,to-find,
-S7,fact,Announcement that Segway PT production would end July 2020,,Segway Inc. / major outlet,2020-06,n/a,,C8,to-find,
-S8,fact,Current Segway-Ninebot product line (official site),,Segway-Ninebot,2026,n/a,,C9,to-verify,Re-check in publish week
-I1,image,First-generation Segway HT/PT,https://commons.wikimedia.org/wiki/Category:Segway_PT,Wikimedia Commons,,,,"hook 0-5s",to-clear,Pick a file and record its exact license
-I2,image,Police officers on Segway,,,,,,body,to-clear,
-I3,image,Segway tour group,,,,,,body,to-clear,
-I4,image,Segway in a city setting,,,,,,body,to-clear,
-I5,image,Current Segway-Ninebot e-scooter,,,,,,"today 50-60s",to-clear,
+S1,fact,"'IT' Unveiled: A Self-Balancing Scooter — unveiled on Good Morning America, NYC; code name Ginger",https://abcnews.com/GMA/story?id=126341&page=1,ABC News,2001-12-03,n/a,,C1 C2,verified,
+S2,fact,"Segway, the most hyped invention since the Macintosh, ends production — $5,000 price; 100k in 13 months plan; ~140k total; security & tourism; July 15 end; Jobs 'bigger than the PC' (citing Time)",https://www.fastcompany.com/90517971/exclusive-segway-the-most-hyped-invention-since-the-macintosh-to-end-production,Fast Company (Mark Wilson),2020-06-23,n/a,,C2 C2b C3 C4 C6 C8,verified,
+S3,fact,"Segway sold only ~140,000 units over two decades",https://www.cbc.ca/radio/thecurrent/the-current-for-july-6-2020-1.5638699/segway-was-the-device-of-the-future-in-the-perfect-moment-to-succeed-so-why-did-it-fail-1.5638716,CBC Radio — The Current,2020-07-06,n/a,,C4,verified,Independent second source for 140k
+S4,fact,Guidance on powered transporters — DfT position and Coates v CPS [2011] EWHC 2032 (Admin),https://www.gov.uk/government/publications/powered-transporters/information-sheet-guidance-on-powered-transporters,UK Department for Transport,,n/a,,C5,verified,Official source
+S5,fact,"Original Segway PT production stops July 15; favorite in tourism and law enforcement",https://www.npr.org/2020/06/23/882536320/after-nearly-two-bumpy-decades-the-original-segway-will-be-retired-in-july,NPR,2020-06-23,n/a,,C6 C8,verified,
+S6,fact,Chinese rival firm Ninebot buys Segway,https://www.bbc.com/news/business-32316865,BBC News,2015-04,n/a,,C7,verified,
+S7,fact,Beijing-based Ninebot acquires Segway; raises $80M from Xiaomi and Sequoia,https://techcrunch.com/2015/04/15/ninebot-segways-into-the-future/,TechCrunch,2015-04-15,n/a,,C7,verified,
+S8,fact,Segway official site — current eKickScooter line,https://www.segway.com/,Segway-Ninebot,2026-11,n/a,,C9,verified,Re-check in publish week
+S9,fact,Segway lineup 2026 (incl. fall 2026 E3 Go),https://riderguide.com/guides/segway-electric-scooters/,RiderGuide,2026,n/a,,C9,verified,Independent confirmation brand active in 2026
+I1,image,Dean Kamen speaks from atop a Segway with an iBot on stage (3 May 2002),https://commons.wikimedia.org/wiki/File:Dean_Kamen_with_Segway_and_iBot_(113100422).jpg,redjar (via Wikimedia Commons),2002-05-03,CC BY-SA 2.0,"Photo: redjar, CC BY-SA 2.0, via Wikimedia Commons",hook 0-5s,cleared,1506x1004 landscape — needs Ken Burns pan for 9:16
+I2,image,Segway PT group tour in front of the Royal Opera House Stockholm,https://commons.wikimedia.org/wiki/File:Segway_PTs_in_Stockholm.jpg,Rosser1954 (via Wikimedia Commons),2011-07-12,CC BY-SA 3.0,"Photo: Rosser1954, CC BY-SA 3.0, via Wikimedia Commons",body 15-40s,cleared,
+I3,image,City Police of Prague officer on a Segway,https://commons.wikimedia.org/wiki/File:Prague_segway_police.JPG,AlfvanBeem (via Wikimedia Commons),2012-06-25,CC0 1.0,"Photo: AlfvanBeem, CC0, via Wikimedia Commons",body 15-40s,cleared,Portrait orientation — good for 9:16
+I4,image,Taking a Segway Tour in Downtown Detroit (NARA 7722935),https://commons.wikimedia.org/wiki/File:Woodward_Avenue_(M-1)_-_Automotive_Heritage_Trail_-_Taking_a_Segway_Tour_in_Downtown_Detroit_-_NARA_-_7722935.jpg,U.S. Federal Highway Administration / National Archives,2009-10-24,Public domain,"Photo: U.S. National Archives (public domain)",body 15-40s (alt),cleared,Only 600x800 — use small or as backup
+I5,image,Segway-made Voi rental e-scooter (Ninebot Kickscooter ES2) in Gothenburg,https://commons.wikimedia.org/wiki/File:Ninebot_by_Segway_Kickscooter_ES2.jpg,Vogler (via Wikimedia Commons),2018-11-27,CC BY-SA 4.0,"Photo: Vogler, CC BY-SA 4.0, via Wikimedia Commons",today 50-60s,cleared,Photo is from 2018 — do not caption as 2026
+I6,image,Segway at the Robot museum in Nagoya,https://commons.wikimedia.org/wiki/File:Segway_01.JPG,Gnsin (via Wikimedia Commons),2007-03-16,CC BY 2.1 JP,"Photo: Gnsin, CC BY 2.1 JP, via Wikimedia Commons",backup,cleared,Portrait; clean product shot
