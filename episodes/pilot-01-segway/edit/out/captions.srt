@@ -3,162 +3,130 @@
 In 2001,
 
 2
-00:00:00,748 --> 00:00:02,208
-this was supposed to
+00:00:00,748 --> 00:00:02,652
+this was supposed to change
 
 3
-00:00:02,208 --> 00:00:03,858
-change how cities move.
+00:00:02,652 --> 00:00:03,858
+how cities move.
 
 4
 00:00:03,858 --> 00:00:05,127
 So what happened?
 
 5
-00:00:05,300 --> 00:00:06,275
+00:00:05,300 --> 00:00:06,292
 Before launch,
 
 6
-00:00:06,275 --> 00:00:07,193
-it had only a
+00:00:06,292 --> 00:00:07,517
+it had only a code
 
 7
-00:00:07,193 --> 00:00:07,939
-code name:
+00:00:07,517 --> 00:00:08,451
+name: Ginger.
 
 8
-00:00:07,939 --> 00:00:09,775
-Ginger. Steve Jobs reportedly
+00:00:08,451 --> 00:00:10,318
+Steve Jobs reportedly said it
 
 9
-00:00:09,775 --> 00:00:10,865
-said it could be
+00:00:10,318 --> 00:00:11,543
+could be as big as
 
 10
-00:00:10,865 --> 00:00:11,782
-as big as the
+00:00:11,543 --> 00:00:12,127
+the PC.
 
 11
-00:00:11,782 --> 00:00:12,127
-PC.
+00:00:15,000 --> 00:00:16,559
+It was unveiled on live
 
 12
-00:00:15,000 --> 00:00:16,230
-It was unveiled on
+00:00:16,559 --> 00:00:18,417
+morning TV in December 2001,
 
 13
-00:00:16,230 --> 00:00:17,461
-live morning TV in
+00:00:18,417 --> 00:00:20,515
+for about five thousand dollars.
 
 14
-00:00:17,461 --> 00:00:18,457
-December 2001,
+00:00:20,515 --> 00:00:21,234
+The plan:
 
 15
-00:00:18,457 --> 00:00:19,980
-for about five thousand
+00:00:21,234 --> 00:00:22,852
+up to a hundred thousand
 
 16
-00:00:19,980 --> 00:00:21,211
-dollars. The plan:
+00:00:22,852 --> 00:00:24,591
+sold in the first thirteen
 
 17
-00:00:21,211 --> 00:00:22,265
-up to a hundred
+00:00:24,591 --> 00:00:25,969
+months. The reality:
 
 18
-00:00:22,265 --> 00:00:23,613
-thousand sold in the
+00:00:25,969 --> 00:00:27,648
+about a hundred and forty
 
 19
-00:00:23,613 --> 00:00:25,078
-first thirteen months.
+00:00:27,648 --> 00:00:29,506
+thousand, in nineteen years.
 
 20
-00:00:25,078 --> 00:00:25,957
-The reality:
+00:00:29,506 --> 00:00:30,945
+The UK banned it from
 
 21
-00:00:25,957 --> 00:00:27,246
-about a hundred and
+00:00:30,945 --> 00:00:33,043
+pavements. Instead of commuters,
 
 22
-00:00:27,246 --> 00:00:28,300
-forty thousand,
+00:00:33,043 --> 00:00:34,901
+it found police officers and
 
 23
-00:00:28,300 --> 00:00:29,531
-in nineteen years.
+00:00:34,901 --> 00:00:35,800
+tour groups.
 
 24
-00:00:29,531 --> 00:00:30,644
-The UK banned it
-
-25
-00:00:30,644 --> 00:00:31,699
-from pavements.
-
-26
-00:00:31,699 --> 00:00:33,105
-Instead of commuters,
-
-27
-00:00:33,105 --> 00:00:34,687
-it found police officers
-
-28
-00:00:34,687 --> 00:00:35,800
-and tour groups.
-
-29
-00:00:40,000 --> 00:00:40,826
+00:00:40,000 --> 00:00:40,851
 In 2015,
 
+25
+00:00:40,851 --> 00:00:43,715
+Beijing startup Ninebot bought the
+
+26
+00:00:43,715 --> 00:00:45,495
+company. On July 15,
+
+27
+00:00:45,495 --> 00:00:47,972
+2020, the original Segway was
+
+28
+00:00:47,972 --> 00:00:49,984
+made for the last time.
+
+29
+00:00:50,400 --> 00:00:52,175
+Today, the Segway name lives
+
 30
-00:00:40,826 --> 00:00:43,303
-Beijing startup Ninebot bought
+00:00:52,175 --> 00:00:53,951
+on, on the electric scooters
 
 31
-00:00:43,303 --> 00:00:44,429
-the company.
+00:00:53,951 --> 00:00:55,497
+you see on city streets.
 
 32
-00:00:44,429 --> 00:00:45,480
-On July 15,
+00:00:55,497 --> 00:00:56,757
+The machine failed.
 
 33
-00:00:45,480 --> 00:00:47,582
-2020, the original Segway
-
-34
-00:00:47,582 --> 00:00:49,008
-was made for the
-
-35
-00:00:49,008 --> 00:00:49,984
-last time.
-
-36
-00:00:50,400 --> 00:00:51,810
-Today, the Segway name
-
-37
-00:00:51,810 --> 00:00:52,487
-lives on,
-
-38
-00:00:52,487 --> 00:00:54,010
-on the electric scooters
-
-39
-00:00:54,010 --> 00:00:55,025
-you see on city
-
-40
-00:00:55,025 --> 00:00:56,774
-streets. The machine failed.
-
-41
-00:00:56,774 --> 00:00:57,845
+00:00:56,757 --> 00:00:57,845
 The idea didn't.
 

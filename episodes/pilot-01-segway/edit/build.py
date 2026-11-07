@@ -1,48 +1,53 @@
 #!/usr/bin/env python3
-"""Build the 60-second cut of pilot 01 (Segway) for "So What Happened?".
+"""Build the 60-second cut of episode 01 (Segway) for "So What Happened?".
 
-Free tools only: Python + Pillow + numpy + FFmpeg, Inter font (SIL OFL).
+Free tools only: Python + Pillow + numpy + FFmpeg, Node + headless Chromium for the
+isometric figure (anatomy skill), Archivo (SIL OFL) for type.
 
-Inputs (relative to this folder):
-  images/I1.jpg I2.jpg I3.jpg I5.jpg   licensed stills (see ../sources.csv)
-  vo/seg0.wav .. seg4.wav               voiceover, one file per script row
-  clips/clip1.mp4, clips/clip2.mp4      OPTIONAL 10s reconstruction clips;
-                                        a labelled placeholder is used if missing
+Design system:
+  graphite-blue base, paper text, steel secondary,
+  hype yellow = what was promised / THEN, reality rust = what happened / NOW.
+  Signature: a year ruler (2000-2026) whose marker moves from THEN to NOW.
 
-Outputs:
-  out/so-what-happened-01-segway.mp4    1080x1920, 30 fps, 60.0 s
-  out/captions.srt                      captions (also burned into the video)
-
-Usage:  python3 build.py
+Inputs:  images/*.jpg (licensed stills), vo/seg0..4.wav, fonts/*.ttf,
+         ../figure/ (isometric Segway; frames are rendered on demand)
+Outputs: out/so-what-happened-01-segway.mp4, out/captions.srt
+Usage:   python3 build.py
 """
-import os, subprocess, wave, math
+import os, subprocess, wave, glob
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 P = lambda *a: os.path.join(HERE, *a)
+FIG = os.path.join(HERE, "..", "figure")
+CACHE = os.environ.get("SWH_CACHE", os.path.join(HERE, "out", "frames"))
 W, H, FPS, DUR = 1080, 1920, 30, 60.0
 NF = int(FPS * DUR)
 
-# ---------- style ----------
-BG = (12, 12, 14)
-ACCENT = (255, 181, 71)        # amber
-WHITE = (245, 245, 240)
-FONT_DIR = "/usr/share/fonts/opentype/inter/"
-def font(weight, size):
-    return ImageFont.truetype(FONT_DIR + f"Inter-{weight}.otf", size)
-F_CAP = font("Black", 66)
-F_CARD_SMALL = font("SemiBold", 34)
-F_CARD_BIG = font("Black", 92)
-F_LABEL = font("Bold", 30)
-F_CREDIT = font("Medium", 24)
-F_STAT_SMALL = font("Bold", 44)
-F_STAT_BIG = font("Black", 150)
-F_TL_YEAR = font("Black", 64)
-F_TL_TXT = font("SemiBold", 34)
+# ---------- tokens ----------
+INK = (23, 32, 41)        # graphite blue, the page
+PAPER = (230, 236, 239)   # text
+STEEL = (127, 144, 158)   # secondary text, ticks
+DEEP = (16, 23, 30)       # shadows, plate borders
+HYPE = (242, 201, 76)     # what was promised
+REAL = (200, 85, 61)      # what actually happened
 
-# Safe zone: keep text between y=180 and y=1600.
-CAPTION_Y = 1330
+def font(name, size):
+    return ImageFont.truetype(P("fonts", f"Archivo-{name}.ttf"), size)
+
+F_HOOK = font("ExpandedBlack", 70)
+F_DISPLAY = font("ExpandedBlack", 128)
+F_DISPLAY_M = font("ExpandedExtraBold", 72)
+F_CAP = font("SemiBold", 60)
+F_BODY = font("Medium", 40)
+F_SMALL = font("Medium", 26)
+F_RULER = font("SemiBold", 26)
+F_RULER_BIG = font("ExpandedExtraBold", 40)
+F_END = font("ExpandedBlack", 104)
+
+MARGIN = 60
+CAP_Y = 1340            # caption block top; safe zone ends at 1600
 
 # ---------- voiceover timing ----------
 SEG_TEXT = [
@@ -61,14 +66,14 @@ def wav_dur(path):
 SEG_DUR = [wav_dur(P("vo", f"seg{i}.wav")) for i in range(5)]
 
 def caption_chunks():
-    """Split each segment into ~4-word chunks timed by character count."""
+    """Split each segment into short phrases timed by character count."""
     out = []
     for txt, st, du in zip(SEG_TEXT, SEG_START, SEG_DUR):
         words = txt.split()
         chunks, cur = [], []
         for w in words:
             cur.append(w)
-            if len(cur) >= 4 or w.endswith((".", "?", ":", ",")) and len(cur) >= 2:
+            if len(cur) >= 5 or (w.endswith((".", "?", ":", ",")) and len(cur) >= 2):
                 chunks.append(" ".join(cur)); cur = []
         if cur:
             chunks.append(" ".join(cur))
@@ -94,329 +99,270 @@ def write_srt(path):
 def ease(x):
     x = max(0.0, min(1.0, x)); return x * x * (3 - 2 * x)
 
-def text_w(d, s, f):
+def tw(d, s, f):
     b = d.textbbox((0, 0), s, font=f); return b[2] - b[0]
-
-def draw_center(d, y, s, f, fill, stroke=0, stroke_fill=(0, 0, 0)):
-    d.text(((W - text_w(d, s, f)) / 2, y), s, font=f, fill=fill, stroke_width=stroke, stroke_fill=stroke_fill)
 
 def wrap(d, s, f, maxw):
     lines, cur = [], ""
     for w in s.split():
         t = (cur + " " + w).strip()
-        if text_w(d, t, f) <= maxw: cur = t
+        if tw(d, t, f) <= maxw: cur = t
         else: lines.append(cur); cur = w
     if cur: lines.append(cur)
     return lines
 
-def vertical_plate(path):
-    """Landscape/portrait still -> 1.25x oversized 9:16 plate: blurred cover bg + sharp fitted fg."""
-    im = Image.open(path).convert("RGB")
-    PW, PH = int(W * 1.25), int(H * 1.25)
-    s = max(PW / im.width, PH / im.height)
-    bg = im.resize((int(im.width * s) + 1, int(im.height * s) + 1)).filter(ImageFilter.GaussianBlur(40))
-    bg = bg.crop(((bg.width - PW) // 2, (bg.height - PH) // 2, (bg.width - PW) // 2 + PW, (bg.height - PH) // 2 + PH))
-    bg = Image.blend(bg, Image.new("RGB", bg.size, BG), 0.45)
-    s2 = min(PW / im.width, PH * 0.62 / im.height)
-    fg = im.resize((int(im.width * s2), int(im.height * s2)), Image.LANCZOS)
-    bg.paste(fg, ((PW - fg.width) // 2, (PH - fg.height) // 2 - int(PH * 0.06)))
-    return bg
+def mix(c, a, bg=INK):
+    return tuple(int(bg[i] + (c[i] - bg[i]) * a) for i in range(3))
 
-def kenburns(plate, t, z0=1.0, z1=1.12, dx=0.0):
-    """t in [0,1]; slow push-in on an oversized plate."""
-    z = z0 + (z1 - z0) * ease(t)
-    cw, ch = plate.width / (1.25 * z) * 1.0, plate.height / (1.25 * z)
-    cx = plate.width / 2 + dx * plate.width * (ease(t) - 0.5)
-    cy = plate.height / 2
-    box = (cx - cw / 2, cy - ch / 2, cx + cw / 2, cy + ch / 2)
-    return plate.resize((W, H), Image.BICUBIC, box=box)
+def canvas():
+    return Image.new("RGB", (W, H), INK)
 
-def credit(img, s):
+# ---------- photo plates ----------
+PLATE = (40, 420, 1000, 820)   # x, y, w, h of every photo plate
+CROPS = {   # (centre x, centre y, zoom) as fractions of the source
+    "I1": (0.40, 0.48, 1.00),
+    "I2": (0.33, 0.58, 1.55),
+    "I3": (0.55, 0.62, 1.00),
+    "I5": (0.72, 0.56, 1.05),
+}
+CREDITS = {
+    "I1": "Dean Kamen with the Segway, 2002. Photo: redjar, CC BY-SA 2.0, Wikimedia Commons",
+    "I2": "Segway tour, Stockholm, 2011. Photo: Rosser1954, CC BY-SA 3.0, Wikimedia Commons",
+    "I3": "City police, Prague, 2012. Photo: AlfvanBeem, CC0, Wikimedia Commons",
+    "I5": "Segway-made rental scooter, 2018. Photo: Vogler, CC BY-SA 4.0, Wikimedia Commons",
+}
+SRC = {k: Image.open(P("images", f"{k}.jpg")).convert("RGB") for k in CROPS}
+
+def plate_frame(key, t, push=0.08, drift=0.0):
+    """Photo cropped to the plate aspect with a slow push-in (t in 0..1)."""
+    im = SRC[key]; _, _, pw, ph = PLATE
+    cx, cy, z = CROPS[key]
+    z = z * (1 + push * ease(t))
+    aspect = pw / ph
+    ch = im.height / z
+    cw = ch * aspect
+    if cw > im.width / z:
+        cw = im.width / z; ch = cw / aspect
+    x = cx * im.width + drift * im.width * (ease(t) - 0.5) - cw / 2
+    y = cy * im.height - ch / 2
+    x = max(0, min(im.width - cw, x)); y = max(0, min(im.height - ch, y))
+    return im.resize((pw, ph), Image.LANCZOS, box=(x, y, x + cw, y + ch))
+
+def draw_plate(img, key, t, push=0.08, drift=0.0, alpha=1.0):
+    x, y, pw, ph = PLATE
+    ph_img = plate_frame(key, t, push, drift)
+    # gentle grade so photos sit in the palette
+    a = np.asarray(ph_img, np.float32)
+    a = a * 0.92 + np.array(INK, np.float32) * 0.08
+    ph_img = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
     d = ImageDraw.Draw(img)
-    d.text((40, 1560), s, font=F_CREDIT, fill=(200, 200, 195), stroke_width=2, stroke_fill=(0, 0, 0))
+    d.rectangle((x - 6, y - 6, x + pw + 5, y + ph + 5), fill=DEEP)
+    if alpha < 1:
+        ph_img = Image.blend(Image.new("RGB", ph_img.size, INK), ph_img, alpha)
+    img.paste(ph_img, (x, y))
+    d.text((x, y + ph + 18), CREDITS[key], font=F_SMALL, fill=STEEL)
 
-def pill(img, s, y=210, fg=(15, 15, 15), bgc=ACCENT):
+# ---------- the year ruler (signature) ----------
+R_X0, R_X1, Y0, Y1 = 110, 970, 2000, 2026
+def yx(year):
+    return R_X0 + (R_X1 - R_X0) * (year - Y0) / (Y1 - Y0)
+
+def ruler(img, y, reveal=1.0, marker=None, marker_col=HYPE, events=(), now_label=True, then_label=True, alpha=1.0):
+    """Baseline with a tick per year, majors every 5. `marker` is a (fractional) year."""
     d = ImageDraw.Draw(img)
-    tw = text_w(d, s, F_LABEL)
-    x0 = (W - tw) / 2 - 26
-    d.rounded_rectangle((x0, y, x0 + tw + 52, y + 56), radius=28, fill=bgc)
-    d.text((x0 + 26, y + 10), s, font=F_LABEL, fill=fg)
+    xe = R_X0 + (R_X1 - R_X0) * ease(reveal)
+    d.line((R_X0, y, xe, y), fill=mix(STEEL, alpha), width=3)
+    for yr in range(Y0, Y1 + 1):
+        x = yx(yr)
+        if x > xe: break
+        big = yr % 5 == 0
+        d.line((x, y, x, y - (22 if big else 11)), fill=mix(STEEL if big else (80, 96, 110), alpha), width=3 if big else 2)
+        if big:
+            s = str(yr); d.text((x - tw(d, s, F_RULER) / 2, y + 12), s, font=F_RULER, fill=mix(STEEL, alpha))
+    for yr, col in events:
+        x = yx(yr)
+        d.ellipse((x - 9, y - 9, x + 9, y + 9), fill=mix(col, alpha))
+    if then_label and reveal > 0.3:
+        a = ease((reveal - 0.3) / 0.4) * alpha
+        d.text((yx(2001) - 8, y - 92), "Then", font=F_RULER, fill=mix(HYPE, a))
+        d.text((yx(2001) - 8, y - 64), "2001", font=F_RULER_BIG, fill=mix(HYPE, a))
+    if now_label and reveal > 0.6:
+        a = ease((reveal - 0.6) / 0.4) * alpha
+        s = "2026"; x = yx(2026) - tw(d, s, F_RULER_BIG) + 8
+        d.text((yx(2026) - tw(d, "Now", F_RULER) + 8, y - 92), "Now", font=F_RULER, fill=mix(REAL, a))
+        d.text((x, y - 64), s, font=F_RULER_BIG, fill=mix(REAL, a))
+    if marker is not None:
+        x = yx(marker)
+        d.polygon([(x - 14, y + 4), (x + 14, y + 4), (x, y - 22)], fill=mix(marker_col, alpha))
+        d.line((x, y - 22, x, y - 40), fill=mix(marker_col, alpha), width=4)
 
-# ---------- clip sources ----------
-class Clip:
-    """10s clip read via ffmpeg, or a labelled placeholder."""
-    def __init__(self, path, title):
-        self.path, self.title = path, title
-        self.frames = None
-        if os.path.exists(path):
-            raw = subprocess.run(
-                ["ffmpeg", "-loglevel", "error", "-i", path, "-t", "10", "-vf",
-                 f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS}",
-                 "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], capture_output=True, check=True).stdout
-            n = len(raw) // (W * H * 3)
-            self.frames = np.frombuffer(raw, np.uint8)[: n * W * H * 3].reshape(n, H, W, 3)
-
-    def frame(self, i):
-        if self.frames is not None and len(self.frames):
-            return Image.fromarray(self.frames[min(i, len(self.frames) - 1)])
-        img = Image.new("RGB", (W, H), (22, 24, 30))
-        d = ImageDraw.Draw(img)
-        for k in range(0, H, 6):  # subtle scanlines so it reads as placeholder
-            d.line((0, k, W, k), fill=(26, 28, 35))
-        draw_center(d, 420, "PLACEHOLDER", F_STAT_SMALL, (120, 125, 140))
-        for j, line in enumerate(wrap(d, self.title, F_TL_TXT, 900)):
-            draw_center(d, 490 + j * 46, line, F_TL_TXT, (150, 155, 170))
-        return img
-
-# ---------- motion pieces ----------
-def stat_card(t):
-    """15-40 s section stat: PLAN vs REALITY (t = seconds into the card)."""
-    img = Image.new("RGB", (W, H), BG)
-    d = ImageDraw.Draw(img)
-    a = ease(t / 0.5)
-    draw_center(d, 520, "THE PLAN", F_STAT_SMALL, tuple(int(c * a) for c in (170, 170, 165)))
-    n = int(100000 * ease(t / 1.2))
-    draw_center(d, 590, f"{n:,}", F_STAT_BIG, tuple(int(c * a) for c in WHITE))
-    draw_center(d, 770, "in 13 months", F_STAT_SMALL, tuple(int(c * a) for c in (170, 170, 165)))
-    if t > 3.6:
-        b = ease((t - 3.6) / 0.5)
-        draw_center(d, 960, "THE REALITY", F_STAT_SMALL, tuple(int(c * b) for c in ACCENT))
-        m = int(140000 * ease((t - 3.6) / 1.2))
-        draw_center(d, 1030, f"~{m:,}", F_STAT_BIG, tuple(int(c * b) for c in ACCENT))
-        draw_center(d, 1210, "in 19 years", F_STAT_SMALL, tuple(int(c * b) for c in ACCENT))
-    return img
-
-def uk_card(t):
-    img = Image.new("RGB", (W, H), BG)
-    d = ImageDraw.Draw(img)
-    a = ease(t / 0.4)
-    draw_center(d, 640, "UNITED KINGDOM", F_STAT_SMALL, tuple(int(c * a) for c in (170, 170, 165)))
-    draw_center(d, 710, "BANNED", F_STAT_BIG, tuple(int(c * a) for c in WHITE))
-    draw_center(d, 890, "from pavements", F_STAT_SMALL, tuple(int(c * a) for c in WHITE))
-    return img
-
-TL = [(2001, "Unveiled on live TV"), (2015, "Bought by Ninebot"), (2020, "Original Segway ends")]
-TL_T = [0.3, 1.0, 4.5]  # seconds into the 40-50 block when each point appears
-
-def timeline_overlay(img, t):
-    """Lower-third timeline drawn over clip 2 (t = seconds into block)."""
-    ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(ov)
-    d.rectangle((0, 780, W, 1160), fill=(8, 8, 10, 190))
-    x0, x1, y = 200, 880, 880
-    prog = ease((t - 0.2) / 5.0)
-    d.line((x0, y, x0 + (x1 - x0) * prog, y), fill=ACCENT + (255,), width=6)
-    for k, ((yr, lab), at) in enumerate(zip(TL, TL_T)):
-        if t < at: continue
-        a = int(255 * ease((t - at) / 0.4))
-        x = x0 + (x1 - x0) * k / 2
-        d.ellipse((x - 16, y - 16, x + 16, y + 16), fill=ACCENT + (a,))
-        s = str(yr); d.text((x - text_w(d, s, F_TL_YEAR) / 2, y + 30), s, font=F_TL_YEAR, fill=WHITE + (a,))
-        for j, line in enumerate(wrap(d, lab, F_TL_TXT, 260)):
-            d.text((x - text_w(d, line, F_TL_TXT) / 2, y + 110 + j * 42), line, font=F_TL_TXT, fill=(200, 200, 195, a))
-    img.paste(ov, (0, 0), ov)
-
-def then_now(img, t, now_highlight=False):
-    """Date card at the top. t = seconds since card start."""
-    d = ImageDraw.Draw(img)
-    a = ease(t / 0.4)
-    y = 200
-    box = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    bd = ImageDraw.Draw(box)
-    bd.rounded_rectangle((90, y, W - 90, y + 190), radius=24, fill=(10, 10, 12, int(200 * a)))
-    img.paste(box, (0, 0), box)
-    col_then = tuple(int(c * a) for c in (WHITE if not now_highlight else (150, 150, 145)))
-    col_now = tuple(int(c * a) for c in (ACCENT if (now_highlight or t > 1.2) else WHITE))
-    d.text((150, y + 22), "THEN", font=F_CARD_SMALL, fill=col_then)
-    d.text((150, y + 62), "2001", font=F_CARD_BIG, fill=col_then)
-    d.text((W / 2 - 22, y + 70), "→", font=F_CARD_BIG, fill=tuple(int(c * a) for c in (120, 120, 115)))
-    nw = text_w(d, "2026", F_CARD_BIG)
-    d.text((W - 150 - nw, y + 22), "NOW", font=F_CARD_SMALL, fill=col_now)
-    d.text((W - 150 - nw, y + 62), "2026", font=F_CARD_BIG, fill=col_now)
-
+# ---------- caption ----------
 def caption(img, tsec):
     for a, b, c in CAPS:
         if a <= tsec < b:
             d = ImageDraw.Draw(img)
-            lines = wrap(d, c, F_CAP, 940)
-            for j, line in enumerate(lines):
-                # highlight numbers/years in amber
-                fill = ACCENT if any(ch.isdigit() for ch in line) else WHITE
-                draw_center(d, CAPTION_Y + j * 82, line, F_CAP, fill, stroke=6)
+            k = ease((tsec - a) / 0.12)
+            for j, line in enumerate(wrap(d, c, F_CAP, W - 2 * MARGIN)):
+                d.text((MARGIN, CAP_Y + j * 74 + (1 - k) * 10), line, font=F_CAP, fill=mix(PAPER, 0.4 + 0.6 * k))
             return
 
-# ---------- edit decision list ----------
-plates = {k: vertical_plate(P("images", f"{k}.jpg")) for k in ["I1", "I2", "I3", "I5"]}
-clip1 = Clip(P("clips", "clip1.mp4"), "Clip 1 (Milad) · 10s · early-2000s city at dawn, silhouetted rider on a self-balancing transporter")
-clip2 = Clip(P("clips", "clip2.mp4"), "Clip 2 (Milad) · 10s · dusty warehouse of unbranded self-balancing transporters")
-
-CREDITS = {
-    "I1": "Photo: redjar · CC BY-SA 2.0 · Wikimedia Commons",
-    "I2": "Photo: Rosser1954 · CC BY-SA 3.0 · Wikimedia Commons",
-    "I3": "Photo: AlfvanBeem · CC0 · Wikimedia Commons",
-    "I5": "Photo: Vogler · CC BY-SA 4.0 · Wikimedia Commons (2018)",
-}
-
-def still(key, t0, t1, z0=1.0, z1=1.12, dx=0.0):
-    return ("still", t0, t1, key, z0, z1, dx)
-
-
-# ---------- motion replacements for the two clip slots ----------
-F_CODE_SMALL = font("SemiBold", 40)
-F_CODE_BIG = font("Black", 190)
-F_QUOTE = font("Bold", 58)
-F_QUOTE_SRC = font("Medium", 32)
-F_BRAND = font("Black", 84)
-
-def codename_motion(t):
-    """5-15 s: 'CODE NAME: GINGER' reveal, then the Jobs quote card (no fake footage)."""
-    bgp = kenburns(plates_dark["I6"] if "I6" in plates_dark else plates_dark["I1"], t / 10.0, 1.3, 1.45, 0.2)
-    img = bgp.copy()
+# ---------- scenes ----------
+def scene_hook(t):
+    img = canvas()
+    draw_plate(img, "I1", t / 5.0, push=0.12, drift=0.04)
+    ruler(img, 300, reveal=t / 1.1, marker=2001 if t > 0.6 else None, events=[(2001, HYPE)] if t > 0.6 else [])
     d = ImageDraw.Draw(img)
-    if t < 4.6:
-        a = ease(t / 0.5)
-        draw_center(d, 640, "BEFORE LAUNCH · 2001", F_CODE_SMALL, tuple(int(c * a) for c in (170, 170, 165)))
-        word = "GINGER"
-        n = int(len(word) * ease((t - 0.6) / 1.2)) if t > 0.6 else 0
-        shown = word[:n]
-        if shown:
-            # letter-spaced reveal
-            sp = 18
-            ws = [text_w(d, ch, F_CODE_BIG) for ch in word]
-            total = sum(ws) + sp * (len(word) - 1)
-            x = (W - total) / 2
-            for k, ch in enumerate(shown):
-                d.text((x, 720), ch, font=F_CODE_BIG, fill=ACCENT)
-                x += ws[k] + sp
-        if t > 2.2:
-            b = ease((t - 2.2) / 0.5)
-            draw_center(d, 960, "the secret code name", F_CODE_SMALL, tuple(int(c * b) for c in WHITE))
-        fade = 1 - ease((t - 4.2) / 0.4)
-        if fade < 1:
-            img = Image.blend(bgp, img, max(0.0, fade))
-    else:
-        tq = t - 4.6
-        a = ease(tq / 0.5)
-        lines = ["“As big a deal", "as the PC.”"]
-        for j, line in enumerate(lines):
-            draw_center(d, 700 + j * 78, line, F_QUOTE, tuple(int(c * a) for c in WHITE))
-        draw_center(d, 880, "Steve Jobs, as reported by TIME (2001)", F_QUOTE_SRC, tuple(int(c * a) for c in (170, 170, 165)))
-        d.line((W / 2 - 60, 660, W / 2 + 60, 660), fill=tuple(int(c * a) for c in ACCENT), width=5)
+    a = ease((t - 0.2) / 0.35)
+    for j, line in enumerate(["Supposed to change", "how cities move."]):
+        d.text((MARGIN, CAP_Y - 30 + j * 88), line, font=F_HOOK, fill=mix(PAPER, a))
     return img
 
-def timeline_bg(t):
-    return kenburns(plates_dark["I2"], t / 10.0, 1.15, 1.3, -0.1)
+FIG_SIZE = 1040
+def figure_frame(slot, lt):
+    path = os.path.join(CACHE, slot, f"f{min(299, int(lt * FPS)):04d}.png")
+    im = Image.open(path).convert("RGB")
+    im = im.resize((FIG_SIZE, int(im.height * FIG_SIZE / im.width)), Image.LANCZOS)
+    img = canvas()
+    img.paste(im, ((W - FIG_SIZE) // 2, 255))
+    return img
 
-def dark_plate(path):
-    pl = vertical_plate(path).filter(ImageFilter.GaussianBlur(14))
-    return Image.blend(pl, Image.new("RGB", pl.size, BG), 0.6)
+def scene_slot1(t):
+    img = figure_frame("slot1", t)
+    d = ImageDraw.Draw(img)
+    a = ease(t / 0.5)
+    d.text((MARGIN, 175), "Before launch it was a secret.", font=F_BODY, fill=mix(STEEL, a))
+    return img
 
-# ---------- finishing: grade, vignette, grain ----------
-_yy, _xx = np.mgrid[0:H, 0:W].astype(np.float32)
-_r = np.sqrt(((_xx - W / 2) / (W / 2)) ** 2 + ((_yy - H / 2) / (H / 2)) ** 2)
-VIGNETTE = np.clip(1.0 - 0.38 * np.clip(_r - 0.55, 0, None) ** 1.6, 0.55, 1.0)[..., None]
-_rng = np.random.default_rng(3)
-GRAIN = [(_rng.standard_normal((H // 2, W // 2, 1)) * 5.5).astype(np.float32) for _ in range(8)]
-
-def finish(img, i):
-    a = np.asarray(img, np.float32)
-    # gentle filmic grade: lift shadows a touch, warm highlights, slight contrast curve
-    a = a / 255.0
-    a = a * a * (3 - 2 * a) * 0.25 + a * 0.75
-    a[..., 0] *= 1.02; a[..., 2] *= 0.98
-    a = a * 255.0 * VIGNETTE
-    g = GRAIN[i % len(GRAIN)].repeat(2, 0).repeat(2, 1)
-    a = np.clip(a + g, 0, 255).astype(np.uint8)
-    return Image.fromarray(a)
-
-def hook_text(img, t):
-    """0-2.6 s: big hook line in the middle of the frame."""
-    if t >= 2.6:
-        return
-    a = ease(t / 0.3) * (1 - ease((t - 2.2) / 0.4))
-    ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(ov)
-    for j, line in enumerate(["SUPPOSED TO CHANGE", "HOW CITIES MOVE."]):
-        f = F_BRAND
-        d.text(((W - text_w(d, line, f)) / 2, 760 + j * 100), line, font=f,
-               fill=(255, 255, 255, int(255 * a)), stroke_width=7, stroke_fill=(0, 0, 0, int(220 * a)))
-    img.paste(ov, (0, 0), ov)
-
-def brand_sting(img, t):
-    """58.3-60 s: channel sting after the answer has been given."""
+def scene_unveil(t):
+    img = canvas()
+    draw_plate(img, "I1", t / 5.2, push=0.1, drift=-0.06)
+    d = ImageDraw.Draw(img)
     a = ease(t / 0.4)
-    ov = Image.new("RGBA", (W, H), (BG[0], BG[1], BG[2], int(235 * a)))
-    d = ImageDraw.Draw(ov)
-    draw = lambda y, s, f, c: d.text(((W - text_w(d, s, f)) / 2, y), s, font=f, fill=c + (int(255 * a),))
-    draw(820, "SO WHAT", F_BRAND, WHITE)
-    draw(915, "HAPPENED?", F_BRAND, ACCENT)
-    draw(1040, "Sources in the description", F_CREDIT, (170, 170, 165))
-    img.paste(ov, (0, 0), ov)
+    d.text((MARGIN, 230), "December 2001", font=F_DISPLAY_M, fill=mix(HYPE, a))
+    d.text((MARGIN, 320), "About $5,000 each", font=F_BODY, fill=mix(PAPER, a))
+    return img
 
-# ---------- edit decision list ----------
-plates = {k: vertical_plate(P("images", f"{k}.jpg")) for k in ["I1", "I2", "I3", "I5"]}
-plates_dark = {k: dark_plate(P("images", f"{k}.jpg")) for k in ["I1", "I2"]}
-clip1 = Clip(P("clips", "clip1.mp4"), "")
-clip2 = Clip(P("clips", "clip2.mp4"), "")
+def scene_rate(t):
+    """The plan vs what happened. Bars compare sales per month:
+    100,000 / 13 = about 7,700 a month; about 140,000 / (12 x 18.6 years) = about 630 a month."""
+    img = canvas(); d = ImageDraw.Draw(img)
+    planned, real = 100000 / 13, 140000 / (12 * 18.6)
+    full = W - 2 * MARGIN
+    a = ease(t / 0.4)
+    d.text((MARGIN, 330), "The plan", font=F_BODY, fill=mix(HYPE, a))
+    n = int(round(100000 * ease((t - 0.2) / 1.2), -3))
+    d.text((MARGIN, 380), f"{n:,}", font=F_DISPLAY, fill=mix(PAPER, a))
+    d.text((MARGIN, 540), "in the first 13 months", font=F_BODY, fill=mix(PAPER, a))
+    bw = full * ease((t - 0.2) / 1.2)
+    d.rectangle((MARGIN, 615, MARGIN + bw, 650), fill=mix(HYPE, a))
+    d.text((MARGIN, 665), "About 7,700 a month", font=F_SMALL, fill=mix(STEEL, a))
+    if t > 3.4:
+        b = ease((t - 3.4) / 0.4)
+        d.text((MARGIN, 790), "What happened", font=F_BODY, fill=mix(REAL, b))
+        m = int(round(140000 * ease((t - 3.5) / 1.0), -3))
+        d.text((MARGIN, 840), f"{m:,}", font=F_DISPLAY, fill=mix(PAPER, b))
+        d.text((MARGIN, 1000), "in nearly 19 years", font=F_BODY, fill=mix(PAPER, b))
+        rw = full * real / planned * ease((t - 3.5) / 1.0)
+        d.rectangle((MARGIN, 1075, MARGIN + max(rw, 2), 1110), fill=mix(REAL, b))
+        d.text((MARGIN, 1125), "About 630 a month", font=F_SMALL, fill=mix(STEEL, b))
+    return img
+
+def scene_uk(t):
+    img = canvas(); d = ImageDraw.Draw(img)
+    a = ease(t / 0.35)
+    d.text((MARGIN, 520), "Not allowed", font=F_DISPLAY_M, fill=mix(PAPER, a))
+    d.text((MARGIN, 610), "on UK pavements", font=F_DISPLAY_M, fill=mix(REAL, a))
+    y = 820   # a kerb drawn as two slabs and joint lines
+    d.rectangle((MARGIN, y, W - MARGIN, y + 18), fill=mix((60, 75, 90), a))
+    d.rectangle((MARGIN, y + 18, W - MARGIN, y + 70), fill=mix((40, 52, 64), a))
+    for x in range(MARGIN + 160, W - MARGIN, 160):
+        d.line((x, y, x, y + 18), fill=mix(INK, a), width=3)
+    d.text((MARGIN, 920), "UK Department for Transport, 2006. Upheld by the High Court, 2011.", font=F_SMALL, fill=mix(STEEL, a))
+    return img
+
+def scene_photo(key, t, dur, label):
+    img = canvas()
+    draw_plate(img, key, t / dur, push=0.1)
+    d = ImageDraw.Draw(img)
+    a = ease(t / 0.4)
+    d.text((MARGIN, 300), label, font=F_DISPLAY_M, fill=mix(PAPER, a))
+    return img
+
+def scene_slot2(t):
+    img = figure_frame("slot2", t)
+    # the ruler walks the marker 2001 -> 2015 -> 2020 in step with the voice
+    yr = 2001 + 14 * ease((t - 0.2) / 1.0) + 5 * ease((t - 3.6) / 1.0)
+    ev = [(2001, HYPE)] + ([(2015, STEEL)] if t > 1.0 else []) + ([(2020, REAL)] if t > 4.6 else [])
+    ruler(img, 205, reveal=1.0, marker=yr, marker_col=REAL if t > 4.6 else HYPE, events=ev, now_label=False, then_label=False)
+    d = ImageDraw.Draw(img)
+    if t > 1.0:
+        d.text((yx(2015) - 60, 130), "Ninebot", font=F_RULER, fill=mix(STEEL, ease((t - 1.0) / 0.4)))
+    if t > 4.6:
+        s = "Last one made"; d.text((yx(2020) - tw(d, s, F_RULER) / 2 + 20, 130), s, font=F_RULER, fill=mix(REAL, ease((t - 4.6) / 0.4)))
+    return img
+
+def scene_now(t):
+    img = canvas()
+    draw_plate(img, "I5", t / 8.3, push=0.12, drift=-0.05)
+    yr = 2020 + 6 * ease((t - 0.2) / 1.4)
+    ruler(img, 300, reveal=1.0, marker=yr, marker_col=REAL, events=[(2001, HYPE), (2020, REAL)])
+    return img
+
+def scene_end(t):
+    img = canvas(); d = ImageDraw.Draw(img)
+    a = ease(t / 0.35)
+    d.text((MARGIN, 760), "So what", font=F_END, fill=mix(PAPER, a))
+    d.text((MARGIN, 880), "happened?", font=F_END, fill=mix(PAPER, a))
+    ruler(img, 1120, reveal=a, marker=2026 if a > 0.9 else None, marker_col=REAL, events=[], then_label=False, now_label=False, alpha=a)
+    d.text((MARGIN, 1200), "Sources are in the description.", font=F_SMALL, fill=mix(STEEL, a))
+    return img
 
 EDL = [
-    still("I1", 0.0, 5.0, 1.02, 1.18, 0.10),
-    ("slot1", 5.0, 15.0, clip1),                    # reconstruction clip 1, or code-name motion
-    still("I1", 15.0, 20.2, 1.25, 1.40, -0.15),     # unveiling era, $5,000
-    ("stat", 20.2, 28.4),                           # plan vs reality
-    ("uk", 28.4, 31.2),                             # UK ban
-    still("I3", 31.2, 35.6, 1.0, 1.10, 0.0),        # police
-    still("I2", 35.6, 40.0, 1.0, 1.12, 0.08),       # tour groups
-    ("slot2", 40.0, 50.0, clip2),                   # reconstruction clip 2, or graded bg; timeline on top
-    still("I5", 50.0, 60.0, 1.0, 1.15, -0.06),      # today
+    (0.0, 5.0, scene_hook),
+    (5.0, 15.0, scene_slot1),
+    (15.0, 20.2, scene_unveil),
+    (20.2, 28.4, scene_rate),
+    (28.4, 31.2, scene_uk),
+    (31.2, 35.6, lambda t: scene_photo("I3", t, 4.4, "Police officers")),
+    (35.6, 40.0, lambda t: scene_photo("I2", t, 4.4, "Tour groups")),
+    (40.0, 50.0, scene_slot2),
+    (50.0, 58.3, scene_now),
+    (58.3, 60.0, scene_end),
 ]
-CUTS = [it[1] for it in EDL[1:]]
-STING_AT = 58.3
+CUTS = [e[0] for e in EDL[1:]]
+
+# ---------- finishing: vignette + grain ----------
+_yy, _xx = np.mgrid[0:H, 0:W].astype(np.float32)
+_r = np.sqrt(((_xx - W / 2) / (W / 2)) ** 2 + ((_yy - H / 2) / (H / 2)) ** 2)
+VIGNETTE = np.clip(1.0 - 0.30 * np.clip(_r - 0.6, 0, None) ** 1.6, 0.6, 1.0)[..., None]
+_rng = np.random.default_rng(3)
+GRAIN = [(_rng.standard_normal((H // 2, W // 2, 1)) * 4.0).astype(np.float32) for _ in range(8)]
+
+def finish(img, i):
+    a = np.asarray(img, np.float32) * VIGNETTE
+    a = np.clip(a + GRAIN[i % 8].repeat(2, 0).repeat(2, 1), 0, 255).astype(np.uint8)
+    return Image.fromarray(a)
 
 def render(i):
     ts = i / FPS
-    for item in EDL:
-        kind, t0, t1 = item[0], item[1], item[2]
-        if t0 <= ts < t1 or (item is EDL[-1] and ts >= t0):
+    for t0, t1, fn in EDL:
+        if t0 <= ts < t1 or (t1 == DUR and ts >= t0):
             break
-    lt = ts - t0
-    if kind == "still":
-        _, _, _, key, z0, z1, dx = item
-        img = kenburns(plates[key], lt / (t1 - t0), z0, z1, dx)
-        credit(img, CREDITS[key])
-    elif kind in ("slot1", "slot2"):
-        clip = item[3]
-        if clip.frames is not None:
-            img = clip.frame(int(lt * FPS))
-            pill(img, "RECONSTRUCTION", y=1530, fg=WHITE, bgc=(30, 30, 34))
-        elif kind == "slot1":
-            img = codename_motion(lt)
-        else:
-            img = timeline_bg(lt)
-    elif kind == "stat":
-        img = stat_card(lt)
-    else:
-        img = uk_card(lt)
-
-    if 0 <= ts < 5.0:
-        then_now(img, ts)
-        hook_text(img, ts)
-    if 40.0 <= ts < 50.0:
-        timeline_overlay(img, ts - 40.0)
-    if 50.0 <= ts < STING_AT:
-        then_now(img, ts - 50.0, now_highlight=True)
-        if ts >= 55.5:
-            pill(img, "BRAND ALIVE · ORIGINAL DISCONTINUED", y=420)
-    # quick dip between blocks
-    for c in CUTS:
+    img = fn(ts - t0)
+    for c in CUTS:  # short dissolve through ink at each cut
         dt = ts - c
-        if -0.1 <= dt < 0.1:
-            img = Image.blend(Image.new("RGB", (W, H), (0, 0, 0)), img, 0.35 + 0.65 * abs(dt) / 0.1)
-    if ts < STING_AT:
+        if -0.067 <= dt < 0.067:
+            img = Image.blend(canvas(), img, 0.3 + 0.7 * abs(dt) / 0.067)
+    if 5.0 <= ts < 58.3:
         caption(img, ts)
-    else:
-        brand_sting(img, ts - STING_AT)
     return finish(img, i)
+
+def ensure_figure_frames():
+    for slot in ("slot1", "slot2"):
+        d = os.path.join(CACHE, slot)
+        if len(glob.glob(os.path.join(d, "f*.png"))) < 300:
+            print("rendering figure", slot, flush=True)
+            subprocess.run(["node", os.path.join(FIG, "render-frames.mjs"), slot, d], check=True)
 
 # ---------- audio: VO + original synthesized score + whooshes ----------
 SR = 48000
@@ -494,6 +440,7 @@ def loudnorm_two_pass(src, dst):
 
 def main():
     os.makedirs(P("out"), exist_ok=True)
+    ensure_figure_frames()
     write_srt(P("out", "captions.srt"))
     build_audio(P("out", "mix_raw.wav"))
     loudnorm_two_pass(P("out", "mix_raw.wav"), P("out", "mix.wav"))
