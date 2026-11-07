@@ -1,0 +1,5 @@
+{
+  "env": {
+    "CHROME_PATH": "/opt/pw-browsers/chromium"
+  }
+}
