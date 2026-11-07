@@ -260,17 +260,118 @@ CREDITS = {
 def still(key, t0, t1, z0=1.0, z1=1.12, dx=0.0):
     return ("still", t0, t1, key, z0, z1, dx)
 
+
+# ---------- motion replacements for the two clip slots ----------
+F_CODE_SMALL = font("SemiBold", 40)
+F_CODE_BIG = font("Black", 190)
+F_QUOTE = font("Bold", 58)
+F_QUOTE_SRC = font("Medium", 32)
+F_BRAND = font("Black", 84)
+
+def codename_motion(t):
+    """5-15 s: 'CODE NAME: GINGER' reveal, then the Jobs quote card (no fake footage)."""
+    bgp = kenburns(plates_dark["I6"] if "I6" in plates_dark else plates_dark["I1"], t / 10.0, 1.3, 1.45, 0.2)
+    img = bgp.copy()
+    d = ImageDraw.Draw(img)
+    if t < 4.6:
+        a = ease(t / 0.5)
+        draw_center(d, 640, "BEFORE LAUNCH · 2001", F_CODE_SMALL, tuple(int(c * a) for c in (170, 170, 165)))
+        word = "GINGER"
+        n = int(len(word) * ease((t - 0.6) / 1.2)) if t > 0.6 else 0
+        shown = word[:n]
+        if shown:
+            # letter-spaced reveal
+            sp = 18
+            ws = [text_w(d, ch, F_CODE_BIG) for ch in word]
+            total = sum(ws) + sp * (len(word) - 1)
+            x = (W - total) / 2
+            for k, ch in enumerate(shown):
+                d.text((x, 720), ch, font=F_CODE_BIG, fill=ACCENT)
+                x += ws[k] + sp
+        if t > 2.2:
+            b = ease((t - 2.2) / 0.5)
+            draw_center(d, 960, "the secret code name", F_CODE_SMALL, tuple(int(c * b) for c in WHITE))
+        fade = 1 - ease((t - 4.2) / 0.4)
+        if fade < 1:
+            img = Image.blend(bgp, img, max(0.0, fade))
+    else:
+        tq = t - 4.6
+        a = ease(tq / 0.5)
+        lines = ["“As big a deal", "as the PC.”"]
+        for j, line in enumerate(lines):
+            draw_center(d, 700 + j * 78, line, F_QUOTE, tuple(int(c * a) for c in WHITE))
+        draw_center(d, 880, "Steve Jobs, as reported by TIME (2001)", F_QUOTE_SRC, tuple(int(c * a) for c in (170, 170, 165)))
+        d.line((W / 2 - 60, 660, W / 2 + 60, 660), fill=tuple(int(c * a) for c in ACCENT), width=5)
+    return img
+
+def timeline_bg(t):
+    return kenburns(plates_dark["I2"], t / 10.0, 1.15, 1.3, -0.1)
+
+def dark_plate(path):
+    pl = vertical_plate(path).filter(ImageFilter.GaussianBlur(14))
+    return Image.blend(pl, Image.new("RGB", pl.size, BG), 0.6)
+
+# ---------- finishing: grade, vignette, grain ----------
+_yy, _xx = np.mgrid[0:H, 0:W].astype(np.float32)
+_r = np.sqrt(((_xx - W / 2) / (W / 2)) ** 2 + ((_yy - H / 2) / (H / 2)) ** 2)
+VIGNETTE = np.clip(1.0 - 0.38 * np.clip(_r - 0.55, 0, None) ** 1.6, 0.55, 1.0)[..., None]
+_rng = np.random.default_rng(3)
+GRAIN = [(_rng.standard_normal((H // 2, W // 2, 1)) * 5.5).astype(np.float32) for _ in range(8)]
+
+def finish(img, i):
+    a = np.asarray(img, np.float32)
+    # gentle filmic grade: lift shadows a touch, warm highlights, slight contrast curve
+    a = a / 255.0
+    a = a * a * (3 - 2 * a) * 0.25 + a * 0.75
+    a[..., 0] *= 1.02; a[..., 2] *= 0.98
+    a = a * 255.0 * VIGNETTE
+    g = GRAIN[i % len(GRAIN)].repeat(2, 0).repeat(2, 1)
+    a = np.clip(a + g, 0, 255).astype(np.uint8)
+    return Image.fromarray(a)
+
+def hook_text(img, t):
+    """0-2.6 s: big hook line in the middle of the frame."""
+    if t >= 2.6:
+        return
+    a = ease(t / 0.3) * (1 - ease((t - 2.2) / 0.4))
+    ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(ov)
+    for j, line in enumerate(["SUPPOSED TO CHANGE", "HOW CITIES MOVE."]):
+        f = F_BRAND
+        d.text(((W - text_w(d, line, f)) / 2, 760 + j * 100), line, font=f,
+               fill=(255, 255, 255, int(255 * a)), stroke_width=7, stroke_fill=(0, 0, 0, int(220 * a)))
+    img.paste(ov, (0, 0), ov)
+
+def brand_sting(img, t):
+    """58.3-60 s: channel sting after the answer has been given."""
+    a = ease(t / 0.4)
+    ov = Image.new("RGBA", (W, H), (BG[0], BG[1], BG[2], int(235 * a)))
+    d = ImageDraw.Draw(ov)
+    draw = lambda y, s, f, c: d.text(((W - text_w(d, s, f)) / 2, y), s, font=f, fill=c + (int(255 * a),))
+    draw(820, "SO WHAT", F_BRAND, WHITE)
+    draw(915, "HAPPENED?", F_BRAND, ACCENT)
+    draw(1040, "Sources in the description", F_CREDIT, (170, 170, 165))
+    img.paste(ov, (0, 0), ov)
+
+# ---------- edit decision list ----------
+plates = {k: vertical_plate(P("images", f"{k}.jpg")) for k in ["I1", "I2", "I3", "I5"]}
+plates_dark = {k: dark_plate(P("images", f"{k}.jpg")) for k in ["I1", "I2"]}
+clip1 = Clip(P("clips", "clip1.mp4"), "")
+clip2 = Clip(P("clips", "clip2.mp4"), "")
+
 EDL = [
     still("I1", 0.0, 5.0, 1.02, 1.18, 0.10),
-    ("clip", 5.0, 15.0, clip1),
+    ("slot1", 5.0, 15.0, clip1),                    # reconstruction clip 1, or code-name motion
     still("I1", 15.0, 20.2, 1.25, 1.40, -0.15),     # unveiling era, $5,000
     ("stat", 20.2, 28.4),                           # plan vs reality
     ("uk", 28.4, 31.2),                             # UK ban
     still("I3", 31.2, 35.6, 1.0, 1.10, 0.0),        # police
     still("I2", 35.6, 40.0, 1.0, 1.12, 0.08),       # tour groups
-    ("clip", 40.0, 50.0, clip2),                    # + timeline overlay
+    ("slot2", 40.0, 50.0, clip2),                   # reconstruction clip 2, or graded bg; timeline on top
     still("I5", 50.0, 60.0, 1.0, 1.15, -0.06),      # today
 ]
+CUTS = [it[1] for it in EDL[1:]]
+STING_AT = 58.3
 
 def render(i):
     ts = i / FPS
@@ -283,9 +384,15 @@ def render(i):
         _, _, _, key, z0, z1, dx = item
         img = kenburns(plates[key], lt / (t1 - t0), z0, z1, dx)
         credit(img, CREDITS[key])
-    elif kind == "clip":
-        img = item[3].frame(int(lt * FPS))
-        pill(img, "RECONSTRUCTION", y=1530, fg=WHITE, bgc=(30, 30, 34))
+    elif kind in ("slot1", "slot2"):
+        clip = item[3]
+        if clip.frames is not None:
+            img = clip.frame(int(lt * FPS))
+            pill(img, "RECONSTRUCTION", y=1530, fg=WHITE, bgc=(30, 30, 34))
+        elif kind == "slot1":
+            img = codename_motion(lt)
+        else:
+            img = timeline_bg(lt)
     elif kind == "stat":
         img = stat_card(lt)
     else:
@@ -293,49 +400,109 @@ def render(i):
 
     if 0 <= ts < 5.0:
         then_now(img, ts)
+        hook_text(img, ts)
     if 40.0 <= ts < 50.0:
         timeline_overlay(img, ts - 40.0)
-    if ts >= 50.0:
+    if 50.0 <= ts < STING_AT:
         then_now(img, ts - 50.0, now_highlight=True)
         if ts >= 55.5:
-            d = ImageDraw.Draw(img)
-            a = ease((ts - 55.5) / 0.5)
             pill(img, "BRAND ALIVE · ORIGINAL DISCONTINUED", y=420)
-    # 6-frame fade between EDL blocks
-    for item in EDL[1:]:
-        dt = ts - item[1]
+    # quick dip between blocks
+    for c in CUTS:
+        dt = ts - c
         if -0.1 <= dt < 0.1:
-            k = abs(dt) / 0.1
-            img = Image.blend(Image.new("RGB", (W, H), (0, 0, 0)), img, 0.35 + 0.65 * k)
-    caption(img, ts)
-    return img
+            img = Image.blend(Image.new("RGB", (W, H), (0, 0, 0)), img, 0.35 + 0.65 * abs(dt) / 0.1)
+    if ts < STING_AT:
+        caption(img, ts)
+    else:
+        brand_sting(img, ts - STING_AT)
+    return finish(img, i)
+
+# ---------- audio: VO + original synthesized score + whooshes ----------
+SR = 48000
+
+def synth_score():
+    """Original ambient bed (no third-party music): slow minor pads + soft pulse."""
+    n = int(SR * DUR); t = np.arange(n) / SR
+    out = np.zeros(n, np.float32)
+    # chord changes every ~7.5 s: Am - F - C - G (low register)
+    roots = [110.0, 87.31, 130.81, 98.0]
+    for k in range(8):
+        s0 = k * 7.5; s1 = s0 + 8.5
+        m = (t >= s0) & (t < s1)
+        tt = t[m] - s0
+        env = np.minimum(1, tt / 2.0) * np.minimum(1, np.maximum(0, (8.5 - tt) / 2.0))
+        r = roots[k % 4]
+        third = 1.189 if k % 4 == 0 else 1.26
+        for f, g in [(r, 0.5), (r * third, 0.28), (r * 1.498, 0.32), (r * 2, 0.18)]:
+            out[m] += (g * env * (np.sin(2 * np.pi * f * tt) + 0.3 * np.sin(2 * np.pi * f * 2.003 * tt))).astype(np.float32)
+    # soft heartbeat pulse in the middle section (15-50 s)
+    for b in np.arange(15.0, 50.0, 0.857):
+        s = int(b * SR); L = int(0.25 * SR)
+        e = np.exp(-np.arange(L) / (0.05 * SR))
+        out[s:s + L] += (0.35 * e * np.sin(2 * np.pi * 55 * np.arange(L) / SR)).astype(np.float32)
+    # simple one-pole low-pass for warmth
+    y = np.zeros_like(out); a = 0.08
+    for i in range(1, len(out)):
+        y[i] = y[i - 1] + a * (out[i] - y[i - 1])
+    return y / (np.abs(y).max() + 1e-9)
+
+def whoosh(L=0.45):
+    n = int(SR * L); rng = np.random.default_rng(9)
+    noise = rng.standard_normal(n).astype(np.float32)
+    env = np.sin(np.pi * np.linspace(0, 1, n)) ** 2
+    # band sweep via moving average of varying width
+    y = np.convolve(noise, np.ones(12) / 12, mode="same") * env
+    return y / (np.abs(y).max() + 1e-9)
 
 def build_audio(path):
-    sr = 48000
-    mix = np.zeros(int(sr * DUR), np.float32)
+    n = int(SR * DUR)
+    vo = np.zeros(n, np.float32)
     for k in range(5):
         with wave.open(P("vo", f"seg{k}.wav")) as w:
+            sr = w.getframerate()
             a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
-        s = int(SEG_START[k] * sr)
-        a = a[: len(mix) - s]
-        mix[s:s + len(a)] += a
-    peak = np.abs(mix).max() or 1
-    mix = mix / peak * 0.89
+        if sr != SR:
+            a = np.interp(np.arange(0, len(a), sr / SR), np.arange(len(a)), a).astype(np.float32)
+        s = int(SEG_START[k] * SR); a = a[: n - s]
+        vo[s:s + len(a)] += a
+    vo /= (np.abs(vo).max() + 1e-9)
+    # sidechain: duck music under speech
+    envl = np.convolve(np.abs(vo), np.ones(SR // 20) / (SR // 20), mode="same")
+    duck = 1.0 - 0.65 * np.clip(envl / (envl.max() * 0.25 + 1e-9), 0, 1)
+    duck = np.convolve(duck, np.ones(SR // 10) / (SR // 10), mode="same")
+    music = synth_score() * 0.16 * duck
+    # music fade out under the sting, lift at the very end
+    sfx = np.zeros(n, np.float32); wh = whoosh() * 0.12
+    for c in CUTS:
+        s = int((c - 0.25) * SR); sfx[s:s + len(wh)] += wh[: n - s]
+    mix = vo * 0.9 + music + sfx
+    mix /= (np.abs(mix).max() + 1e-9); mix *= 0.89
     with wave.open(path, "w") as w:
-        w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
         w.writeframes((mix * 32767).astype(np.int16).tobytes())
+
+def loudnorm_two_pass(src, dst):
+    """Measure then normalise to -14 LUFS / -1.5 dBTP (two-pass, linear)."""
+    import json, re
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-i", src, "-af", "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json",
+                        "-f", "null", "-"], capture_output=True, text=True).stderr
+    m = json.loads(r[r.rindex("{"):r.rindex("}") + 1])
+    flt = (f"loudnorm=I=-14:TP=-1.5:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
+           f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", src, "-af", flt, "-ar", str(SR), dst], check=True)
 
 def main():
     os.makedirs(P("out"), exist_ok=True)
     write_srt(P("out", "captions.srt"))
-    build_audio(P("out", "vo_mix.wav"))
+    build_audio(P("out", "mix_raw.wav"))
+    loudnorm_two_pass(P("out", "mix_raw.wav"), P("out", "mix.wav"))
     out = P("out", "so-what-happened-01-segway.mp4")
     ff = subprocess.Popen(
         ["ffmpeg", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
-         "-r", str(FPS), "-i", "-", "-i", P("out", "vo_mix.wav"),
-         "-c:v", "libx264", "-preset", "medium", "-crf", "19", "-pix_fmt", "yuv420p",
-         "-c:a", "aac", "-b:a", "192k", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
-         "-t", str(DUR), "-movflags", "+faststart", out], stdin=subprocess.PIPE)
+         "-r", str(FPS), "-i", "-", "-i", P("out", "mix.wav"),
+         "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p",
+         "-c:a", "aac", "-b:a", "192k", "-t", str(DUR), "-movflags", "+faststart", out], stdin=subprocess.PIPE)
     for i in range(NF):
         ff.stdin.write(render(i).tobytes())
         if i % 300 == 0:
